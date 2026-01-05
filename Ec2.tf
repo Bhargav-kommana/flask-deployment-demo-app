@@ -25,7 +25,25 @@ resource "aws_instance" "example" {
   vpc_security_group_ids = [
     aws_security_group.allow_all_and_5000.id
   ]
+  user_data = << EOF
 
+    #!/bin/bash
+
+    yum update -y
+
+    yum install httpd -y
+
+    service httpd start
+
+    chkconfig httpd on
+
+    cd /var/www/html
+
+    echo "<html><h1>Hello Cloud Gurus Welcome To My Webpage</h1></html>" >
+
+    index.html
+
+  EOF
   tags = {
     Name = "flak-deployment"
   }
