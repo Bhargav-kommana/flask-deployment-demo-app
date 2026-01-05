@@ -58,4 +58,4 @@ jobs:
               --restart always \
               $IMAGE
 
-            echo "Deployment is successful"
+            echo "Deployment successful"
