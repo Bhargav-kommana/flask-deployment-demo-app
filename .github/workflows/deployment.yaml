@@ -7,7 +7,8 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPO: 415699578195.dkr.ecr.us-east-1.amazonaws.com/aws-devops-app
+  AWS_ACCOUNT_ID: 415699578195
+  ECR_REPO: aws-devops-app
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
@@ -15,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
@@ -30,13 +31,10 @@ jobs:
 
       - name: Build & Push Docker Image
         run: |
-          ECR_URI=$(aws ecr describe-repositories \
-            --repository-names $ECR_REPO \
-            --query 'repositories[0].repositoryUri' \
-            --output text)
+          ECR_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}
 
-          docker build -t $ECR_URI:${IMAGE_TAG} .
-          docker push $ECR_URI:${IMAGE_TAG}
+          docker build -t $ECR_URI:$IMAGE_TAG .
+          docker push $ECR_URI:$IMAGE_TAG
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -47,25 +45,24 @@ jobs:
           script: |
             set -e
 
-            ECR_URI=$(aws ecr describe-repositories \
-              --repository-names my-app \
-              --query 'repositories[0].repositoryUri' \
-              --output text)
+            AWS_REGION=us-east-1
+            AWS_ACCOUNT_ID=415699578195
+            ECR_REPO=aws-devops-app
+            IMAGE_TAG=${{ github.sha }}
 
-            IMAGE=$ECR_URI:${IMAGE_TAG}
+            ECR_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO
+            IMAGE=$ECR_URI:$IMAGE_TAG
 
-            echo "Pulling new image..."
+            aws ecr get-login-password --region $AWS_REGION \
+              | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
             docker pull $IMAGE
 
-            echo "Stopping old container..."
             docker stop my-app || true
             docker rm my-app || true
 
-            echo "Starting new container..."
             docker run -d \
               --name my-app \
               -p 80:8080 \
               --restart always \
               $IMAGE
-
-            echo "Deployment complete"
