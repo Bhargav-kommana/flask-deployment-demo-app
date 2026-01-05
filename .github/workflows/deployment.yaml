@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  PUBLIC_ECR_REPO: public.ecr.aws/l6d5k7a9/demo-app
+  PUBLIC_ECR_REPO: public.ecr.aws/l6d5k7a9/demo-flask-app
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
