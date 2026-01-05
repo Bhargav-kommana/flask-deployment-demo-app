@@ -17,7 +17,6 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -28,7 +27,7 @@ jobs:
       - name: Login to Amazon Public ECR
         run: |
           aws ecr-public get-login-password --region us-east-1 \
-            | docker login --username AWS --password-stdin public.ecr.aws
+          | docker login --username AWS --password-stdin public.ecr.aws
 
       - name: Build & Push Docker Image
         run: |
@@ -43,8 +42,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-
-            IMAGE=public.ecr.aws/l6d5k7a9/demo-app:${{ github.sha }}
+            IMAGE=public.ecr.aws/l6d5k7a9/demo-flask-app:${{ github.sha }}
 
             echo "Pulling image from Public ECR..."
             docker pull $IMAGE
@@ -60,4 +58,4 @@ jobs:
               --restart always \
               $IMAGE
 
-            echo "Deployment successful 🎉"
+            echo "Deployment successful"
