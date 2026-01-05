@@ -1,4 +1,4 @@
-name: Build & Deploy to EC2
+name: Build & Deploy Flask App to EC2
 
 on:
   push:
@@ -36,11 +36,11 @@ jobs:
           docker build -t $ECR_URI:$IMAGE_TAG .
           docker push $ECR_URI:$IMAGE_TAG
 
-      - name: Deploy to EC2
+      - name: Deploy to EC2 (Ubuntu)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
@@ -53,16 +53,22 @@ jobs:
             ECR_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO
             IMAGE=$ECR_URI:$IMAGE_TAG
 
+            echo "Logging into ECR..."
             aws ecr get-login-password --region $AWS_REGION \
               | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
+            echo "Pulling latest image..."
             docker pull $IMAGE
 
+            echo "Stopping old container..."
             docker stop my-app || true
             docker rm my-app || true
 
+            echo "Starting new container on port 5000..."
             docker run -d \
               --name my-app \
-              -p 80:8080 \
+              -p 5000:5000 \
               --restart always \
               $IMAGE
+
+            echo "Deployment completed successfully"
